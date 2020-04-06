@@ -188,6 +188,52 @@ module.exports = class Autolevel {
     return res
   }
 
+
+  isoscelesTrinagleSolver(side, base){
+    let IsoscelesH = Math.sqrt(Math.pow(side, 2) - (Math.pow(base, 2) / 4))
+
+    return Math.atan((2 * IsoscelesH) / base)
+
+  }
+
+  splitCircleToArcs(p1, p2, pc) {
+    let res = []
+
+    let linearDist = Math.sqrt(this.distanceSquared2(p1, p2)) // distance
+
+    let maxSegLength = this.delta / 2
+
+    let radius = Math.sqrt(this.distanceSquared2(p1, pc))
+
+    let angDist = this.isoscelesTrinagleSolver(radius, linearDist)
+
+    let maxAngLength = this.isoscelesTrinagleSolver(radius, maxSegLength)
+
+    let zVect = (p2.z - p1.z) / angDist
+
+    res.push({
+      x: p1.x,
+      y: p1.y,
+      z: p1.z
+    }) // first point
+
+    for (let a = maxAngLength; a < angDist; a += maxAngLength) {
+      res.push({
+        x: pc.x + (Math.cos(a) * radius),
+        y: pc.y + (Math.sin(a) * radius),
+        z: p1.z + (zVect * a)
+      }) // split points
+    }
+
+    res.push({
+      x: p2.x,
+      y: p2.y,
+      z: p2.z
+    }) // last point
+    
+    return res
+  }
+
   getThreeClosestPoints(pt) {
     let res = []
     if (this.probedPoints.length < 3) {
@@ -280,39 +326,35 @@ module.exports = class Autolevel {
             // strip coordinates
             lineStripped = lineStripped.replace(/([XYZ])([\.\+\-\d]+)/gi, '')
 
+            let segs = []
+
             if (isCircle){
 
-              // let circleConf = {
-              //   i: 0,
-              //   j: 0,
-              //   k: 0,
-              //   p: 1
-              // }
+              let centerPoint = {
+                x: 0,
+                y: 0,
+                z: 0,
+              }
 
-              // let iMatch = /I([\.\+\-\d]+)/gi.exec(lineStripped)
-              // if (iMatch) circleConf.i = parseFloat(xMatch[1])
+              let iMatch = /I([\.\+\-\d]+)/gi.exec(lineStripped)
+              if (iMatch) centerPoint.x = parseFloat(xMatch[1])
     
-              // let jMatch = /J([\.\+\-\d]+)/gi.exec(lineStripped)
-              // if (jMatch) circleConf.j = parseFloat(yMatch[1])
-    
-              // let kMatch = /K([\.\+\-\d]+)/gi.exec(lineStripped)
-              // if (kMatch) circleConf.k = parseFloat(zMatch[1])
+              let jMatch = /J([\.\+\-\d]+)/gi.exec(lineStripped)
+              if (jMatch) centerPoint.y = parseFloat(yMatch[1])
+
+              segs = this.splitCircleToArcs(p0, pt, centerPoint)
 
               // let pMatch = /P([\.\+\-\d]+)/gi.exec(lineStripped)
               // if (pMatch) circleConf.p = parseInt(zMatch[1])
 
-              let cpt = this.compensateZCoord(pt)
-              let newLine = lineStripped + ` X${cpt.x.toFixed(this.decimals)} Y${cpt.y.toFixed(this.decimals)} Z${cpt.z.toFixed(this.decimals)} (Z${pt.z.toFixed(this.decimals)})`
-              result.push(newLine.trim())
-
             } else{
-              let segs = this.splitLineToSegments(p0, pt)
-              for (let seg of segs) {
-                let cpt = this.compensateZCoord(seg)
-                // ( Z${seg.z.toFixed(this.decimals)} )`
-                let newLine = lineStripped + ` X${cpt.x.toFixed(this.decimals)} Y${cpt.y.toFixed(this.decimals)} Z${cpt.z.toFixed(this.decimals)} (Z${seg.z.toFixed(this.decimals)})`
-                result.push(newLine.trim())
-              }
+              segs = this.splitLineToSegments(p0, pt)
+            }
+
+            for (let seg of segs) {
+              let cpt = this.compensateZCoord(seg)
+              let newLine = lineStripped + ` X${cpt.x.toFixed(this.decimals)} Y${cpt.y.toFixed(this.decimals)} Z${cpt.z.toFixed(this.decimals)} (Z${seg.z.toFixed(this.decimals)})`
+              result.push(newLine.trim())
             }
           } else {
             result.push(lineStripped + ' (Relative)')
