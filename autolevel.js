@@ -258,7 +258,7 @@ module.exports = class Autolevel {
                 ||
               (/(G38.+|G5.+|G10|G4.+|G92|G92.1)/gi.test(lineStripped)) // skip compensation for these G-Codes
             ){
-              result.push(lineStripped + '(ORIGINAL)')
+              result.push(lineStripped + ' (ORIGINAL)')
             }
         else {
           if (/G91/i.test(lineStripped)) abs = false
