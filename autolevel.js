@@ -18,6 +18,7 @@ module.exports = class Autolevel {
       y: 0,
       z: 0
     }
+    this.decimals = 3
     socket.on('gcode:load', (file, gc) => {
       if (!file.startsWith(alFileNamePrefix)) {
         this.gcodeFileName = file
@@ -73,7 +74,11 @@ module.exports = class Autolevel {
 
     let f = /F([\.\+\-\d]+)/gi.exec(cmd)
     if (f) this.feed = parseFloat(f[1])
-    console.log(`STEP: ${this.delta} mm HEIGHT:${this.height} mm FEED:${this.feed}`)
+
+    let p = /P([\.\+\-\d]+)/gi.exec(cmd)
+    if (p) this.decimals = parseFloat(p[1])
+
+    console.log(`STEP: ${this.delta} mm HEIGHT:${this.height} mm FEED:${this.feed} DECIMALS:${this.decimals}`)
 
     this.wco = {
       x: context.mposx - context.posx,
