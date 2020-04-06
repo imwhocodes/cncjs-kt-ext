@@ -44,7 +44,7 @@ module.exports = class Autolevel {
           }
           if (this.planedPointCount > 0) {
             this.probedPoints.push(pt)
-            console.log('probed ' + this.probedPoints.length + '/' + this.planedPointCount + '>', pt.x.toFixed(3), pt.y.toFixed(3), pt.z.toFixed(3))
+            console.log('probed ' + this.probedPoints.length + '/' + this.planedPointCount + '>', pt.x.toFixed(5), pt.y.toFixed(5), pt.z.toFixed(5))
             if (this.probedPoints.length >= this.planedPointCount) {
               this.applyCompensation()
               this.planedPointCount = 0
@@ -87,7 +87,7 @@ module.exports = class Autolevel {
     let dx = (context.xmax - context.xmin) / parseInt((context.xmax - context.xmin) / this.delta)
     let dy = (context.ymax - context.ymin) / parseInt((context.ymax - context.ymin) / this.delta)
     code.push('(AL: probing initial point)')
-    code.push(`G90 G0 X${context.xmin.toFixed(3)} Y${context.ymin.toFixed(3)} Z${this.height}`)
+    code.push(`G90 G0 X${context.xmin.toFixed(5)} Y${context.ymin.toFixed(5)} Z${this.height}`)
     code.push(`G38.2 Z-${this.height} F${this.feed / 2}`)
     code.push(`G10 L20 P1 Z0`) // set the z zero
     code.push(`G0 Z${this.height}`)
@@ -105,7 +105,7 @@ module.exports = class Autolevel {
         x += dx
         if (x > context.xmax) x = context.xmax
         code.push(`(AL: probing point ${this.planedPointCount + 1})`)
-        code.push(`G90 G0 X${x.toFixed(3)} Y${y.toFixed(3)} Z${this.height}`)
+        code.push(`G90 G0 X${x.toFixed(5)} Y${y.toFixed(5)} Z${this.height}`)
         code.push(`G38.2 Z-${this.height} F${this.feed}`)
         code.push(`G0 Z${this.height}`)
         this.planedPointCount++
@@ -150,7 +150,7 @@ module.exports = class Autolevel {
   }
 
   formatPt(pt) {
-    return `(x:${pt.x.toFixed(3)} y:${pt.y.toFixed(3)} z:${pt.z.toFixed(3)})`
+    return `(x:${pt.x.toFixed(5)} y:${pt.y.toFixed(5)} z:${pt.z.toFixed(5)})`
   }
 
   splitToSegments(p1, p2) {
@@ -268,7 +268,7 @@ module.exports = class Autolevel {
             let segs = this.splitToSegments(p0, pt)
             for (let seg of segs) {
               let cpt = this.compensateZCoord(seg)
-              let newLine = lineStripped + ` X${cpt.x.toFixed(3)} Y${cpt.y.toFixed(3)} Z${cpt.z.toFixed(3)} ; Z${seg.z.toFixed(3)}`
+              let newLine = lineStripped + ` X${cpt.x.toFixed(5)} Y${cpt.y.toFixed(5)} Z${cpt.z.toFixed(5)} ; Z${seg.z.toFixed(5)}`
               result.push(newLine.trim())
             }
           } else {

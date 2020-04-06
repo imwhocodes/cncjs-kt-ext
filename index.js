@@ -21,6 +21,7 @@ program
   .option('--socket-port <port>', 'socket port', '8000')
   .option('--controller-type <type>', 'controller type: Grbl|Smoothie|TinyG', 'Grbl')
   .option('--access-token-lifetime <lifetime>', 'access token lifetime in seconds or a time span string', '30d')
+  .option('--decimals <decimals>', 'access token lifetime in seconds or a time span string', '3')
 
 program.parse(process.argv)
 
@@ -34,7 +35,8 @@ var options = {
   socketAddress: program.socketAddress,
   socketPort: program.socketPort,
   controllerType: program.controllerType,
-  accessTokenLifetime: program.accessTokenLifetime
+  accessTokenLifetime: program.accessTokenLifetime,
+  decimals : program.decimals
 }
 
 var defaults = {
@@ -44,7 +46,8 @@ var defaults = {
   socketAddress: 'localhost',
   socketPort: 8000,
   controllerType: 'Grbl',
-  accessTokenLifetime: '30d'
+  accessTokenLifetime: '30d',
+  decimals : 3
 }
 
 // Get secret key from the config file and generate an access token
