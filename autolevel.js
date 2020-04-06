@@ -158,7 +158,7 @@ module.exports = class Autolevel {
     return `(x:${pt.x.toFixed(this.decimals)} y:${pt.y.toFixed(this.decimals)} z:${pt.z.toFixed(this.decimals)})`
   }
 
-  splitToSegments(p1, p2) {
+  splitLineToSegments(p1, p2) {
     let res = []
     let v = this.sub3(p2, p1) // delta
     let dist = Math.sqrt(this.distanceSquared3(p1, p2)) // distance
@@ -255,7 +255,7 @@ module.exports = class Autolevel {
         let lineStripped = this.stripComments(line)
         if  (
               (!/(X|Y|Z)/gi.test(lineStripped)) // no coordinate change --> copy to output
-                ||
+                &&
               (/(G38.+|G5.+|G10|G4.+|G92|G92.1)/gi.test(lineStripped)) // skip compensation for these G-Codes
             ){
               result.push(lineStripped + ' (ORIGINAL)')
@@ -263,6 +263,9 @@ module.exports = class Autolevel {
         else {
           if (/G91/i.test(lineStripped)) abs = false
           if (/G90/i.test(lineStripped)) abs = true
+
+          let isCircle = /(G2|G3)/gi.test(lineStripped)
+
           let xMatch = /X([\.\+\-\d]+)/gi.exec(lineStripped)
           if (xMatch) pt.x = parseFloat(xMatch[1])
 
@@ -271,19 +274,48 @@ module.exports = class Autolevel {
 
           let zMatch = /Z([\.\+\-\d]+)/gi.exec(lineStripped)
           if (zMatch) pt.z = parseFloat(zMatch[1])
+          
 
           if (abs) {
             // strip coordinates
             lineStripped = lineStripped.replace(/([XYZ])([\.\+\-\d]+)/gi, '')
-            let segs = this.splitToSegments(p0, pt)
-            for (let seg of segs) {
-              let cpt = this.compensateZCoord(seg)
-              // ( Z${seg.z.toFixed(this.decimals)} )`
-              let newLine = lineStripped + ` X${cpt.x.toFixed(this.decimals)} Y${cpt.y.toFixed(this.decimals)} Z${cpt.z.toFixed(this.decimals)} (Z${seg.z.toFixed(this.decimals)})`
+
+            if (isCircle){
+
+              // let circleConf = {
+              //   i: 0,
+              //   j: 0,
+              //   k: 0,
+              //   p: 1
+              // }
+
+              // let iMatch = /I([\.\+\-\d]+)/gi.exec(lineStripped)
+              // if (iMatch) circleConf.i = parseFloat(xMatch[1])
+    
+              // let jMatch = /J([\.\+\-\d]+)/gi.exec(lineStripped)
+              // if (jMatch) circleConf.j = parseFloat(yMatch[1])
+    
+              // let kMatch = /K([\.\+\-\d]+)/gi.exec(lineStripped)
+              // if (kMatch) circleConf.k = parseFloat(zMatch[1])
+
+              // let pMatch = /P([\.\+\-\d]+)/gi.exec(lineStripped)
+              // if (pMatch) circleConf.p = parseInt(zMatch[1])
+
+              let cpt = this.compensateZCoord(pt)
+              let newLine = lineStripped + ` X${cpt.x.toFixed(this.decimals)} Y${cpt.y.toFixed(this.decimals)} Z${cpt.z.toFixed(this.decimals)} (Z${pt.z.toFixed(this.decimals)})`
               result.push(newLine.trim())
+
+            } else{
+              let segs = this.splitLineToSegments(p0, pt)
+              for (let seg of segs) {
+                let cpt = this.compensateZCoord(seg)
+                // ( Z${seg.z.toFixed(this.decimals)} )`
+                let newLine = lineStripped + ` X${cpt.x.toFixed(this.decimals)} Y${cpt.y.toFixed(this.decimals)} Z${cpt.z.toFixed(this.decimals)} (Z${seg.z.toFixed(this.decimals)})`
+                result.push(newLine.trim())
+              }
             }
           } else {
-            result.push(lineStripped)
+            result.push(lineStripped + ' (Relative)')
             console.log('WARNING: using relative mode may not produce correct results')
           }
           p0 = {
