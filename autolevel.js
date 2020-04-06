@@ -253,8 +253,8 @@ module.exports = class Autolevel {
       let result = []
       lines.forEach(line => {
         let lineStripped = this.stripComments(line)
-        if (!/(X|Y|Z)/gi.test(lineStripped)) result.push(line + ' ; Original') // no coordinate change --> copy to output
-        else if (/(G38.+|G5.+|G10|G2.+|G4.+|G92|G92.1)/gi.test(lineStripped)) result.push(line + ' ; Original') // skip compensation for these G-Codes
+        if (!/(X|Y|Z)/gi.test(lineStripped)) result.push(line + ' ( Original )') // no coordinate change --> copy to output
+        else if (/(G38.+|G5.+|G10|G2.+|G4.+|G92|G92.1)/gi.test(lineStripped)) result.push(line + ' ( Original )') // skip compensation for these G-Codes
         else {
           if (/G91/i.test(lineStripped)) abs = false
           if (/G90/i.test(lineStripped)) abs = true
@@ -273,7 +273,7 @@ module.exports = class Autolevel {
             let segs = this.splitToSegments(p0, pt)
             for (let seg of segs) {
               let cpt = this.compensateZCoord(seg)
-              let newLine = lineStripped + ` X${cpt.x.toFixed(this.decimals)} Y${cpt.y.toFixed(this.decimals)} Z${cpt.z.toFixed(this.decimals)} ; Z${seg.z.toFixed(this.decimals)}`
+              let newLine = lineStripped + ` X${cpt.x.toFixed(this.decimals)} Y${cpt.y.toFixed(this.decimals)} Z${cpt.z.toFixed(this.decimals)} ( Z${seg.z.toFixed(this.decimals)} )`
               result.push(newLine.trim())
             }
           } else {
