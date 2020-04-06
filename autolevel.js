@@ -258,9 +258,7 @@ module.exports = class Autolevel {
                 ||
               (/(G38.+|G5.+|G10|G4.+|G92|G92.1)/gi.test(lineStripped)) // skip compensation for these G-Codes
             ){
-              result.push('( ORIGINAL )')
-              result.push(line)
-              result.push('\n')
+              result.push(lineStripped + '( ORIGINAL )')
             }
         else {
           if (/G91/i.test(lineStripped)) abs = false
@@ -281,10 +279,8 @@ module.exports = class Autolevel {
             for (let seg of segs) {
               let cpt = this.compensateZCoord(seg)
               // ( Z${seg.z.toFixed(this.decimals)} )`
-              let newLine = lineStripped + ` X${cpt.x.toFixed(this.decimals)} Y${cpt.y.toFixed(this.decimals)} Z${cpt.z.toFixed(this.decimals)}`
-              result.push(`( Z${seg.z.toFixed(this.decimals)} )`)
+              let newLine = lineStripped + ` X${cpt.x.toFixed(this.decimals)} Y${cpt.y.toFixed(this.decimals)} Z${cpt.z.toFixed(this.decimals)} ( Z${seg.z.toFixed(this.decimals)} )`
               result.push(newLine.trim())
-              result.push('\n')
             }
           } else {
             result.push(lineStripped)
