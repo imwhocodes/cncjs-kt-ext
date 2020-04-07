@@ -196,41 +196,57 @@ module.exports = class Autolevel {
 
   }
 
+  // splitCircleToArcs(p1, p2, pc) {
+  //   let res = []
+
+  //   let linearDist = Math.sqrt(this.distanceSquared2(p1, p2)) // distance
+
+  //   let maxSegLength = this.delta / 2
+
+  //   let radius = Math.sqrt(this.distanceSquared2(p1, pc))
+
+  //   let angDist = this.isoscelesTrinagleSolver(radius, linearDist)
+
+  //   let maxAngLength = this.isoscelesTrinagleSolver(radius, maxSegLength)
+
+  //   let zVect = (p2.z - p1.z) / angDist
+
+  //   res.push({
+  //     x: p1.x,
+  //     y: p1.y,
+  //     z: p1.z
+  //   }) // first point
+
+  //   for (let a = maxAngLength; a < angDist; a += maxAngLength) {
+  //     res.push({
+  //       x: pc.x + (Math.cos(a) * radius),
+  //       y: pc.y + (Math.sin(a) * radius),
+  //       z: p1.z + (zVect * a)
+  //     }) // split points
+  //   }
+
+  //   res.push({
+  //     x: p2.x,
+  //     y: p2.y,
+  //     z: p2.z
+  //   }) // last point
+
+  //   return res
+  // }
+
   splitCircleToArcs(p1, p2, pc) {
     let res = []
-
-    let linearDist = Math.sqrt(this.distanceSquared2(p1, p2)) // distance
-
-    let maxSegLength = this.delta / 2
-
-    let radius = Math.sqrt(this.distanceSquared2(p1, pc))
-
-    let angDist = this.isoscelesTrinagleSolver(radius, linearDist)
-
-    let maxAngLength = this.isoscelesTrinagleSolver(radius, maxSegLength)
-
-    let zVect = (p2.z - p1.z) / angDist
 
     res.push({
       x: p1.x,
       y: p1.y,
       z: p1.z
     }) // first point
-
-    for (let a = maxAngLength; a < angDist; a += maxAngLength) {
-      res.push({
-        x: pc.x + (Math.cos(a) * radius),
-        y: pc.y + (Math.sin(a) * radius),
-        z: p1.z + (zVect * a)
-      }) // split points
-    }
-
     res.push({
       x: p2.x,
       y: p2.y,
       z: p2.z
     }) // last point
-    
     return res
   }
 
@@ -279,94 +295,143 @@ module.exports = class Autolevel {
     }
   }
 
+  clonePoint(p){
+     
+    let pc = {
+            x: p.x,
+            y: p.y,
+            z: p.z
+            }
+
+    return pc
+
+  }
+
   applyCompensation() {
     this.sckw.sendGcode(`(AL: applying compensation ...)`)
     console.log('apply leveling')
     try {
+
       let lines = this.gcode.split('\n')
+
       let p0 = {
-        x: 0,
-        y: 0,
-        z: 0
+        x: context.posx,
+        y: context.posy,
+        z: context.posz
       }
-      let pt = {
-        x: 0,
-        y: 0,
-        z: 0
+
+      let pt = this.clonePoint(p0)
+
+
+      const GCodeModal = {
+        LINEAR : {
+                  RAPID:  0,
+                  FEED: 1
+        },
+        ARC : {
+                  CW:     2,
+                  CCW:    3
+              }
       }
+
+      let gCodeMode = 0
+
 
       let abs = true
       let result = []
+
       lines.forEach(line => {
+
         let lineStripped = this.stripComments(line)
-        if  (
-              (!/(X|Y|Z)/gi.test(lineStripped)) // no coordinate change --> copy to output
-                &&
-              (/(G38.+|G5.+|G10|G4.+|G92|G92.1)/gi.test(lineStripped)) // skip compensation for these G-Codes
-            ){
-              result.push(lineStripped + ' (ORIGINAL)')
-            }
-        else {
-          if (/G91/i.test(lineStripped)) abs = false
-          if (/G90/i.test(lineStripped)) abs = true
 
-          let isCircle = /(G2|G3)/gi.test(lineStripped)
+        if (/G91/gi.test(lineStripped)) abs = false
+        if (/G90/gi.test(lineStripped)) abs = true
 
+        if (/G0/gi.test(lineStripped)) gCodeMode = GCodeModal.LINEAR.RAPID
+
+        if (/G1/gi.test(lineStripped)) gCodeMode = GCodeModal.LINEAR.FEED
+
+        if (/G2/gi.test(lineStripped)) gCodeMode = GCodeModal.ARC.CW
+
+        if (/G3/gi.test(lineStripped)) gCodeMode = GCodeModal.ARC.CCW
+
+        let doNotTouchGCode = /(G38.+|G5.+|G10|G4.+|G92|G92.1)/gi.test(lineStripped)
+
+        if( abs && (!doNotTouchGCode)){
+          
           let xMatch = /X([\.\+\-\d]+)/gi.exec(lineStripped)
           if (xMatch) pt.x = parseFloat(xMatch[1])
-
+  
           let yMatch = /Y([\.\+\-\d]+)/gi.exec(lineStripped)
           if (yMatch) pt.y = parseFloat(yMatch[1])
-
+  
           let zMatch = /Z([\.\+\-\d]+)/gi.exec(lineStripped)
           if (zMatch) pt.z = parseFloat(zMatch[1])
-          
 
-          if (abs) {
-            // strip coordinates
-            lineStripped = lineStripped.replace(/([XYZ])([\.\+\-\d]+)/gi, '')
+          let anyXYZ = xMatch || yMatch || zMatch
 
+          if (anyXYZ) {
+
+            let lineStrippedCoordRemoved = lineStripped.replace(/([XYZ])([\.\+\-\d]+)/gi, '')
             let segs = []
 
-            if (isCircle){
+            switch(gCodeMode){
 
-              let centerPoint = {
-                x: 0,
-                y: 0,
-                z: 0,
-              }
+              case seasons.LINEAR.RAPID:
+              case seasons.LINEAR.FEED:
+                segs = this.splitLineToSegments(p0, pt)
+                break
 
-              let iMatch = /I([\.\+\-\d]+)/gi.exec(lineStripped)
-              if (iMatch) centerPoint.x = parseFloat(xMatch[1])
+              case seasons.ARC.CW:
+              case seasons.ARC.CCW:
+
+                let centerPoint = {
+                  x: 0,
+                  y: 0,
+                  z: 0,
+                }
+  
+                let iMatch = /I([\.\+\-\d]+)/gi.exec(lineStripped)
+                if (iMatch) centerPoint.x = parseFloat(xMatch[1])
+      
+                let jMatch = /J([\.\+\-\d]+)/gi.exec(lineStripped)
+                if (jMatch) centerPoint.y = parseFloat(yMatch[1])
     
-              let jMatch = /J([\.\+\-\d]+)/gi.exec(lineStripped)
-              if (jMatch) centerPoint.y = parseFloat(yMatch[1])
+                segs = this.splitCircleToArcs(p0, pt, centerPoint)
+  
+                // let pMatch = /P([\.\+\-\d]+)/gi.exec(lineStripped)
+                // if (pMatch) circleConf.p = parseInt(zMatch[1])
 
-              segs = this.splitCircleToArcs(p0, pt, centerPoint)
-
-              // let pMatch = /P([\.\+\-\d]+)/gi.exec(lineStripped)
-              // if (pMatch) circleConf.p = parseInt(zMatch[1])
-
-            } else{
-              segs = this.splitLineToSegments(p0, pt)
+                break
+  
             }
 
             for (let seg of segs) {
               let cpt = this.compensateZCoord(seg)
-              let newLine = lineStripped + ` X${cpt.x.toFixed(this.decimals)} Y${cpt.y.toFixed(this.decimals)} Z${cpt.z.toFixed(this.decimals)} (Z${seg.z.toFixed(this.decimals)})`
+              let newLine = lineStrippedCoordRemoved + ` X${cpt.x.toFixed(this.decimals)} Y${cpt.y.toFixed(this.decimals)} Z${cpt.z.toFixed(this.decimals)} (Z${seg.z.toFixed(this.decimals)})`
               result.push(newLine.trim())
             }
-          } else {
-            result.push(lineStripped + ' (Relative)')
-            console.log('WARNING: using relative mode may not produce correct results')
+  
+            p0 = this.clonePoint(pt)
+
           }
-          p0 = {
-            x: pt.x,
-            y: pt.y,
-            z: pt.z
-          } // clone
+
+          else{
+            result.push(lineStripped + ' (ORIGINAL)')
+            console.log('WARNING: Non Touching GCODE ( ' + lineStripped + ' )' )
+          }
+
+          
         }
+
+        else {
+          result.push(lineStripped + ' (RELATIVE)')
+          console.log('WARNING: Using Relative Mode or Skipped ( ' + lineStripped + ' )')
+        }
+
       })
+
+
       const newgcodeFileName = alFileNamePrefix + this.gcodeFileName;
       this.sckw.sendGcode(`(AL: loading new gcode ${newgcodeFileName} ...)`)
       this.sckw.loadGcode(newgcodeFileName, result.join('\n'))
