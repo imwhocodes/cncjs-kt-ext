@@ -355,7 +355,7 @@ module.exports = class Autolevel {
 
         if (/G3/gi.test(lineStripped)) gCodeMode = GCodeModal.ARC.CCW
 
-        let doNotTouchGCode = /(G38.+|G5.+|G10|G4.+|G92|G92.1)/gi.test(lineStripped)
+        let doNotTouchGCode = /G38.+|G5.+|G10|G4.+|G92|G92.1/gi.test(lineStripped)
 
         if( abs && (!doNotTouchGCode)){
           
@@ -378,8 +378,16 @@ module.exports = class Autolevel {
             switch(gCodeMode){
 
               case seasons.LINEAR.RAPID:
+                segs = [pt]
+                break
+
               case seasons.LINEAR.FEED:
-                segs = this.splitLineToSegments(p0, pt)
+                if ( yMatch || yMatch){
+                  segs = this.splitLineToSegments(p0, pt)
+                }
+                else{
+                  segs = [pt]
+                }
                 break
 
               case seasons.ARC.CW:
@@ -413,7 +421,7 @@ module.exports = class Autolevel {
             }
   
             p0 = this.clonePoint(pt)
-
+            console.log('Processed: ( ' + lineStripped + ' )' )
           }
 
           else{
@@ -431,11 +439,14 @@ module.exports = class Autolevel {
 
       })
 
+      console.log('Calculation END')
+      this.sckw.sendGcode('(AL: Calculation END)')
 
       const newgcodeFileName = alFileNamePrefix + this.gcodeFileName;
       this.sckw.sendGcode(`(AL: loading new gcode ${newgcodeFileName} ...)`)
       this.sckw.loadGcode(newgcodeFileName, result.join('\n'))
       this.sckw.sendGcode('(AL: finished)')
+
     } catch (x) {
       this.sckw.sendGcode(`(AL: error occurred ${x})`)
     }
