@@ -250,12 +250,12 @@ module.exports = class Autolevel {
 
   splitCircleToArcs(p1, p2, pc) {
     let res = []
+    // res.push({
+    //   x: p1.x,
+    //   y: p1.y,
+    //   z: p1.z
+    // }) // first point
 
-    res.push({
-      x: p1.x,
-      y: p1.y,
-      z: p1.z
-    }) // first point
     res.push({
       x: p2.x,
       y: p2.y,
@@ -431,7 +431,7 @@ module.exports = class Autolevel {
             }
   
             p0 = this.clonePoint(pt)
-            console.log('Processed: ( ' + lineStripped + ' )' )
+            console.log('Processed: ( ' + lineStripped + ' ) -> ( ' + segs.length + ' )' )
           }
 
           else{
