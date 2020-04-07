@@ -387,11 +387,11 @@ module.exports = class Autolevel {
 
             switch(gCodeMode){
 
-              case seasons.LINEAR.RAPID:
+              case GCodeModal.LINEAR.RAPID:
                 segs = [pt]
                 break
 
-              case seasons.LINEAR.FEED:
+              case GCodeModal.LINEAR.FEED:
                 if ( xMatch || yMatch){
                   segs = this.splitLineToSegments(p0, pt)
                 }
@@ -400,8 +400,8 @@ module.exports = class Autolevel {
                 }
                 break
 
-              case seasons.ARC.CW:
-              case seasons.ARC.CCW:
+              case GCodeModal.ARC.CW:
+              case GCodeModal.ARC.CCW:
 
                 let centerPoint = {
                   x: 0,
@@ -459,6 +459,7 @@ module.exports = class Autolevel {
 
     } catch (x) {
       this.sckw.sendGcode(`(AL: error occurred ${x})`)
+      console.log(`ERROR OCCURRED: ${x}`)
     }
     console.log('Leveling applied')
   }
