@@ -382,7 +382,7 @@ module.exports = class Autolevel {
                 break
 
               case seasons.LINEAR.FEED:
-                if ( yMatch || yMatch){
+                if ( xMatch || yMatch){
                   segs = this.splitLineToSegments(p0, pt)
                 }
                 else{
