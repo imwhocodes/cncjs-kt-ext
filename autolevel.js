@@ -18,6 +18,13 @@ module.exports = class Autolevel {
       y: 0,
       z: 0
     }
+
+    this.wpos = {
+      x: 0,
+      y: 0,
+      z: 0
+    }
+
     this.decimals = 3
     socket.on('gcode:load', (file, gc) => {
       if (!file.startsWith(alFileNamePrefix)) {
@@ -85,6 +92,13 @@ module.exports = class Autolevel {
       y: context.mposy - context.posy,
       z: context.mposz - context.posz
     }
+
+    this.wpos = {
+      x: context.posx,
+      y: context.posy,
+      z: context.posz
+    }
+
     this.probedPoints = []
     this.planedPointCount = 0
     console.log('WCO:', this.wco)
@@ -314,11 +328,7 @@ module.exports = class Autolevel {
 
       let lines = this.gcode.split('\n')
 
-      let p0 = {
-        x: context.posx,
-        y: context.posy,
-        z: context.posz
-      }
+      let p0 = this.clonePoint(this.wpos)
 
       let pt = this.clonePoint(p0)
 
